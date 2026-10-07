@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/warzone")({
   ssr: false,
   head: () => ({
     meta: [
