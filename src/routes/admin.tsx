@@ -73,13 +73,13 @@ function AuthForm() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const p = authSchema.safeParse({ email, password });
-    if (!p.success) return toast.error(p.error.issues[0].message);
+    if (!p.success) { toast.error(p.error.issues[0]?.message ?? "Invalid input"); return; }
     setBusy(true);
     const { data, error } = mode === "in"
       ? await supabase.auth.signInWithPassword(p.data)
       : await supabase.auth.signUp({ ...p.data, options: { emailRedirectTo: `${window.location.origin}/admin` } });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (mode === "up" && !data.session) toast.success("Check your email to confirm your account.");
   };
 
@@ -196,9 +196,9 @@ function NewLink({ nextPos, onSaved }: { nextPos: number; onSaved: () => void })
   const [v, setV] = useState(empty);
   const save = async () => {
     const p = linkSchema.safeParse(v);
-    if (!p.success) return toast.error(p.error.issues[0].message);
+    if (!p.success) { toast.error(p.error.issues[0]?.message ?? "Invalid input"); return; }
     const { error } = await supabase.from("links").insert({ ...p.data, position: nextPos });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Link added"); setV(empty); setOpen(false); onSaved();
   };
   if (!open) return <Button variant="outline" className="w-full" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Add link</Button>;
@@ -215,9 +215,9 @@ function EditLink({ link, onSaved }: { link: LinkRow; onSaved: () => void }) {
   const [v, setV] = useState({ title: link.title, description: link.description ?? "", url: link.url, kind: link.kind });
   const save = async () => {
     const p = linkSchema.safeParse(v);
-    if (!p.success) return toast.error(p.error.issues[0].message);
+    if (!p.success) { toast.error(p.error.issues[0]?.message ?? "Invalid input"); return; }
     const { error } = await supabase.from("links").update(p.data).eq("id", link.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setOpen(false); onSaved();
   };
   if (!open) return <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>Edit</Button>;
@@ -241,9 +241,9 @@ function SettingsForm({ initial }: { initial: { title: string; tagline: string; 
   const [v, setV] = useState({ ...initial, avatar_url: initial.avatar_url ?? "" });
   const save = async () => {
     const p = settingsSchema.safeParse(v);
-    if (!p.success) return toast.error(p.error.issues[0].message);
+    if (!p.success) { toast.error(p.error.issues[0]?.message ?? "Invalid input"); return; }
     const { error } = await supabase.from("site_settings").update({ ...p.data, avatar_url: p.data.avatar_url || null, updated_at: new Date().toISOString() }).eq("id", 1);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Page updated"); qc.invalidateQueries({ queryKey: ["settings"] });
   };
   return (
