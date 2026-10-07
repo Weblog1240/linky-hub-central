@@ -13,14 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/warzone")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Admin — WEBLOG's" },
-      { name: "description", content: "Manage WEBLOG's links, headline and see click counts." },
-      { property: "og:title", content: "Admin — WEBLOG's" },
-      { property: "og:description", content: "Admin dashboard for WEBLOG's." },
+      { title: "Warzone — WEBLOG's Admin" },
+      { name: "description", content: "Private administration area for WEBLOG's." },
+      { property: "og:title", content: "Warzone — WEBLOG's Admin" },
+      { property: "og:description", content: "Private administration area for WEBLOG's." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -77,7 +77,7 @@ function AuthForm() {
     setBusy(true);
     const { data, error } = mode === "in"
       ? await supabase.auth.signInWithPassword(p.data)
-      : await supabase.auth.signUp({ ...p.data, options: { emailRedirectTo: `${window.location.origin}/admin` } });
+      : await supabase.auth.signUp({ ...p.data, options: { emailRedirectTo: `${window.location.origin}/warzone` } });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     if (mode === "up" && !data.session) toast.success("Check your email to confirm your account.");
