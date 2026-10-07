@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the administration surface at `/warzone` with no links from public pages, so its entry point remains undisclosed to visitors.

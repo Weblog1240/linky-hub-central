@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Lock } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchLinks, fetchSettings, KINDS } from "@/lib/weblog";
 import { LinkIcon } from "@/components/LinkIcon";
@@ -13,9 +13,16 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Pick your channel: WhatsApp group, WhatsApp channel, Telegram group or Telegram channel." },
       { property: "og:title", content: "WEBLOG's — Join the community" },
       { property: "og:description", content: "All our WhatsApp and Telegram links in one place." },
+      { property: "og:url", content: "https://weblogs-v12.vercel.app/" },
+      { property: "og:site_name", content: "WEBLOG's" },
+      { property: "og:image", content: "https://weblogs-v12.vercel.app/weblogs-social.jpg" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "WEBLOG's — Join the community" },
+      { name: "twitter:description", content: "All our WhatsApp and Telegram links in one place." },
+      { name: "twitter:image", content: "https://weblogs-v12.vercel.app/weblogs-social.jpg" },
     ],
+    links: [{ rel: "canonical", href: "https://weblogs-v12.vercel.app/" }],
   }),
   component: Index,
 });
@@ -91,12 +98,6 @@ function Index() {
           <p className="text-center text-muted-foreground">No links yet.</p>
         )}
       </main>
-
-      <footer className="mt-auto pt-12 text-center">
-        <Link to="/admin" className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-primary-glow">
-          <Lock className="h-3 w-3" /> admin
-        </Link>
-      </footer>
     </div>
   );
 }
