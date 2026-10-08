@@ -9,20 +9,16 @@ import { LinkIcon } from "@/components/LinkIcon";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "WEBLOG's — Join our WhatsApp & Telegram community" },
+      { title: "WEBTECH — Join our WhatsApp & Telegram community" },
       { name: "description", content: "Pick your channel: WhatsApp group, WhatsApp channel, Telegram group or Telegram channel." },
-      { property: "og:title", content: "WEBLOG's — Join the community" },
+      { property: "og:title", content: "WEBTECH — Join the community" },
       { property: "og:description", content: "All our WhatsApp and Telegram links in one place." },
-      { property: "og:url", content: "https://weblogs-v12.vercel.app/" },
-      { property: "og:site_name", content: "WEBLOG's" },
-      { property: "og:image", content: "https://weblogs-v12.vercel.app/weblogs-social.jpg" },
+      { property: "og:site_name", content: "WEBTECH" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "WEBLOG's — Join the community" },
+      { name: "twitter:title", content: "WEBTECH — Join the community" },
       { name: "twitter:description", content: "All our WhatsApp and Telegram links in one place." },
-      { name: "twitter:image", content: "https://weblogs-v12.vercel.app/weblogs-social.jpg" },
     ],
-    links: [{ rel: "canonical", href: "https://weblogs-v12.vercel.app/" }],
   }),
   component: Index,
 });
@@ -39,7 +35,7 @@ function Clock() {
 }
 
 function Index() {
-  const settings = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
+  const settings = useQuery({ queryKey: ["settings"], queryFn: fetchSettings, refetchInterval: 45 * 60 * 1000 });
   const links = useQuery({ queryKey: ["links"], queryFn: fetchLinks });
   const s = settings.data;
   const visible = (links.data ?? []).filter((l) => l.visible);
@@ -57,14 +53,14 @@ function Index() {
 
       <header className="mt-6 flex flex-col items-center text-center">
         <div className="glow flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-primary/40 bg-secondary">
-          {s?.avatar_url ? (
-            <img src={s.avatar_url} alt={s.title} className="h-full w-full object-cover" />
+          {s?.avatar_src ? (
+            <img src={s.avatar_src} alt={s.title} className="h-full w-full object-cover" />
           ) : (
             <span className="font-display text-5xl text-primary-glow">W</span>
           )}
         </div>
         <span className="pill mt-6 px-4 py-1.5 font-mono text-sm text-primary-glow">&gt;_ {s?.tagline ?? "loading..."}</span>
-        <h1 className="text-glow mt-4 font-display text-5xl">{s?.title ?? "WEBLOG's"}</h1>
+        <h1 className="text-glow mt-4 font-display text-5xl">{s?.title ?? "WEBTECH"}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{s?.bio}</p>
         <span className="pill mt-6 flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-success" /> Choose where to join

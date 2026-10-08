@@ -1,0 +1,4 @@
+CREATE POLICY "Admins upload profile pictures" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'profile-pictures' AND public.has_role(auth.uid(), 'admin') AND lower(storage.extension(name)) IN ('jpg', 'jpeg', 'png', 'webp'));
+CREATE POLICY "Admins read profile pictures" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'profile-pictures' AND public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Visitors read current profile picture" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id = 'profile-pictures' AND EXISTS (SELECT 1 FROM public.site_settings WHERE id = 1 AND avatar_url = 'profile-pictures/' || storage.objects.name));
+CREATE POLICY "Admins remove profile pictures" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'profile-pictures' AND public.has_role(auth.uid(), 'admin'));
