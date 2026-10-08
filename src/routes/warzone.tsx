@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowDown, ArrowUp, Eye, EyeOff, LogOut, Plus, Trash2, Save } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, LogOut, Plus, Trash2, Save, Upload, LoaderCircle } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchLinks, fetchSettings, KINDS, type LinkRow } from "@/lib/weblog";
@@ -12,15 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { PROFILE_BUCKET, PROFILE_PREFIX, resolveProfilePicture, uploadProfilePicture } from "@/lib/profile-picture";
 
 export const Route = createFileRoute("/warzone")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Warzone — WEBLOG's Admin" },
-      { name: "description", content: "Private administration area for WEBLOG's." },
-      { property: "og:title", content: "Warzone — WEBLOG's Admin" },
-      { property: "og:description", content: "Private administration area for WEBLOG's." },
+      { title: "Warzone — WEBTECH Admin" },
+      { name: "description", content: "Private administration area for WEBTECH." },
+      { property: "og:title", content: "Warzone — WEBTECH Admin" },
+      { property: "og:description", content: "Private administration area for WEBTECH." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -233,27 +234,99 @@ const settingsSchema = z.object({
   title: z.string().trim().min(1).max(60),
   tagline: z.string().trim().max(80),
   bio: z.string().trim().max(300),
-  avatar_url: z.string().trim().max(500).refine((u) => u === "" || /^https?:\/\//.test(u), "Photo must be a http(s) link"),
+  avatar_url: z.string().trim().max(500).refine((u) => u === "" || /^https?:\/\//.test(u) || u.startsWith(PROFILE_PREFIX), "Photo must be an uploaded picture or a http(s) link"),
 });
 
-function SettingsForm({ initial }: { initial: { title: string; tagline: string; bio: string; avatar_url: string | null } }) {
+function SettingsForm({ initial }: { initial: { title: string; tagline: string; bio: string; avatar_url: string | null; avatar_src: string | null } }) {
   const qc = useQueryClient();
-  const [v, setV] = useState({ ...initial, avatar_url: initial.avatar_url ?? "" });
+  const [v, setV] = useState({ title: initial.title, tagline: initial.tagline, bio: initial.bio, avatar_url: initial.avatar_url ?? "" });
+  const [photoSrc, setPhotoSrc] = useState(initial.avatar_src);
+  const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const upload = async (file: File) => {
+    setBusy(true);
+    let uploaded: string | null = null;
+    let persisted = false;
+    try {
+      uploaded = await uploadProfilePicture(file);
+      const { error } = await supabase.from("site_settings")
+        .update({ avatar_url: uploaded, updated_at: new Date().toISOString() }).eq("id", 1).select("id").single();
+      if (error) throw error;
+      persisted = true;
+      setV((current) => ({ ...current, avatar_url: uploaded ?? "" }));
+      setPhotoSrc(await resolveProfilePicture(uploaded));
+      await qc.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Profile picture updated");
+    } catch (error) {
+      if (uploaded && !persisted) {
+        await supabase.storage.from(PROFILE_BUCKET).remove([uploaded.slice(PROFILE_PREFIX.length)]);
+      }
+      toast.error(error instanceof Error ? error.message : "Could not upload the picture. Try again.");
+    } finally {
+      setBusy(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+
+  const removePhoto = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("site_settings")
+        .update({ avatar_url: null, updated_at: new Date().toISOString() }).eq("id", 1).select("id").single();
+      if (error) throw error;
+      setV((current) => ({ ...current, avatar_url: "" }));
+      setPhotoSrc(null);
+      await qc.invalidateQueries({ queryKey: ["settings"] });
+      toast.success("Profile picture removed");
+    } catch {
+      toast.error("Could not remove the picture. Try again.");
+    } finally { setBusy(false); }
+  };
+
   const save = async () => {
     const p = settingsSchema.safeParse(v);
     if (!p.success) { toast.error(p.error.issues[0]?.message ?? "Invalid input"); return; }
-    const { error } = await supabase.from("site_settings").update({ ...p.data, avatar_url: p.data.avatar_url || null, updated_at: new Date().toISOString() }).eq("id", 1);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Page updated"); qc.invalidateQueries({ queryKey: ["settings"] });
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("site_settings").update({ ...p.data, avatar_url: p.data.avatar_url || null, updated_at: new Date().toISOString() }).eq("id", 1).select("id").single();
+      if (error) throw error;
+      setPhotoSrc(await resolveProfilePicture(p.data.avatar_url || null));
+      toast.success("Page updated"); await qc.invalidateQueries({ queryKey: ["settings"] });
+    } catch { toast.error("Could not save the page. Try again."); }
+    finally { setSaving(false); }
   };
   return (
     <section className="space-y-3 rounded-2xl border bg-card p-4">
       <h2 className="font-mono text-sm text-primary-glow">&gt;_ page</h2>
+      <div className="space-y-2">
+        <Label htmlFor="profile-picture">Profile picture</Label>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/40 bg-secondary">
+            {photoSrc ? <img src={photoSrc} alt="Current profile picture" className="h-full w-full object-cover" /> : <span className="font-display text-3xl text-primary-glow">W</span>}
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" disabled={busy || saving} onClick={() => fileInput.current?.click()}>
+                {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {busy ? "Updating picture…" : photoSrc ? "Change picture" : "Upload picture"}
+              </Button>
+              {v.avatar_url && <Button variant="ghost" size="icon" title="Remove profile picture" aria-label="Remove profile picture" disabled={busy || saving} onClick={removePhoto}><Trash2 className="h-4 w-4" /></Button>}
+            </div>
+            <p className="text-xs text-muted-foreground">JPG, PNG or WebP · up to 5 MB</p>
+          </div>
+        </div>
+        <input ref={fileInput} id="profile-picture" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy || saving} onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+        }} />
+      </div>
       <div className="space-y-1"><Label>Headline</Label><Input value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} /></div>
       <div className="space-y-1"><Label>Tag line</Label><Input value={v.tagline} onChange={(e) => setV({ ...v, tagline: e.target.value })} /></div>
       <div className="space-y-1"><Label>Bio</Label><Textarea value={v.bio} onChange={(e) => setV({ ...v, bio: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Profile photo link</Label><Input value={v.avatar_url} placeholder="https://..." onChange={(e) => setV({ ...v, avatar_url: e.target.value })} /></div>
-      <Button onClick={save}><Save className="h-4 w-4" /> Save page</Button>
+      <div className="space-y-1"><Label htmlFor="photo-link">Profile photo link (optional)</Label><Input id="photo-link" disabled={busy || saving} value={v.avatar_url.startsWith(PROFILE_PREFIX) ? "" : v.avatar_url} placeholder="https://..." onChange={(e) => setV({ ...v, avatar_url: e.target.value })} /></div>
+      <Button onClick={save} disabled={busy || saving}><Save className="h-4 w-4" /> {saving ? "Saving…" : "Save page"}</Button>
     </section>
   );
 }
