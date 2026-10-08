@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep the administration surface at `/warzone` with no links from public pages, so its entry point remains undisclosed to visitors.
+- Store uploaded profile pictures as private storage paths in the existing site settings; resolve short-lived image URLs for display, with writes restricted to admins and visitor reads restricted to the current picture, because public buckets are unavailable.
